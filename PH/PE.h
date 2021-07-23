@@ -157,14 +157,14 @@ inline PEB* GetPEB()
 	__asm mov eax, dword ptr fs : 0x30;
 }
 
-inline PIMAGE_NT_HEADERS32 GetNTHeaders(DWORD dwImageBase)
+inline PIMAGE_NT_HEADERS32 GetNTHeaders(DWORD dwImageBase)	// This functions it meant to get the image's NT headers.
 {
 	return (PIMAGE_NT_HEADERS32)(dwImageBase +
 		((PIMAGE_DOS_HEADER)dwImageBase)->e_lfanew);
 }
 
-inline PLOADED_IMAGE GetLoadedImage(DWORD dwImageBase)
-{
+inline PLOADED_IMAGE GetLoadedImage(DWORD dwImageBase)		// This function is meant to get the source image's pointer.
+{								// Most of the structures listed in this function were already mentioned.
 	PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)dwImageBase;
 	PIMAGE_NT_HEADERS32 pNTHeaders = GetNTHeaders(dwImageBase);
 
