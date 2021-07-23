@@ -4,15 +4,15 @@
 
 DWORD FindRemotePEB(HANDLE hProcess)
 {
-	HMODULE hNTDLL = LoadLibraryA("ntdll");
-
+	HMODULE hNTDLL = LoadLibraryA("ntdll");		/*	We'll load the ntdll library in order to
+								load the next function we'll be using.	*/
 	if (!hNTDLL)
 		return 0;
 
-	FARPROC fpNtQueryInformationProcess = GetProcAddress
+	FARPROC fpNtQueryInformationProcess = GetProcAddress	// Used to get the function we require from ntdll.
 	(
 		hNTDLL,
-		"NtQueryInformationProcess"
+		"NtQueryInformationProcess"		// The function we need to retrieve information on svchost.exe
 	);
 
 	if (!fpNtQueryInformationProcess)
@@ -26,7 +26,7 @@ DWORD FindRemotePEB(HANDLE hProcess)
 
 	DWORD dwReturnLength = 0;
 
-	ntQueryInformationProcess
+	ntQueryInformationProcess	//	The actual setting of all of the above in order to get the process address.
 	(
 		hProcess,
 		0,
@@ -40,11 +40,11 @@ DWORD FindRemotePEB(HANDLE hProcess)
 
 PEB* ReadRemotePEB(HANDLE hProcess)
 {
-	DWORD dwPEBAddress = FindRemotePEB(hProcess);
-
+	DWORD dwPEBAddress = FindRemotePEB(hProcess);	/*	The "FindRemotePEB" function will contain the code
+								for using- NtQueryInformationProcess.	*/
 	PEB* pPEB = new PEB();
 
-	BOOL bSuccess = ReadProcessMemory
+	BOOL bSuccess = ReadProcessMemory		// As the name implies :)
 	(
 		hProcess,
 		(LPCVOID)dwPEBAddress,
